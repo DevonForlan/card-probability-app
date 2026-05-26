@@ -64,4 +64,3 @@ p{margin:0;color:var(--muted);font-size:14px;line-height:1.5}
   transform:none;
   width:100%;
   }
-@media (max-width:380px){#app{padding-left:12px;padding-right:12px}h1{font-size:22px}.rank-grid{grid-template-columns:repeat(3,1fr)}.result strong{font-size:22px}}
