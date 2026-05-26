@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Card Probability Assistant</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div>
+        <div class="eyebrow">Mobile Card Tool</div>
+        <h1>Card Probability Assistant</h1>
+      </div>
+      <button class="ghost-btn" id="settingsBtn">牌堆</button>
+    </header>
+
+    <section class="deck-card">
+      <div>
+        <div class="label">剩餘牌數</div>
+        <div class="big-number" id="remainingCards">52</div>
+      </div>
+      <div>
+        <div class="label">已出現</div>
+        <div class="big-number subtle" id="seenCards">0</div>
+      </div>
+      <div>
+        <div class="label">牌副數</div>
+        <select id="deckSelect" class="select">
+          <option value="1">1 副</option>
+          <option value="2">2 副</option>
+          <option value="3">3 副</option>
+          <option value="4">4 副</option>
+          <option value="6">6 副</option>
+          <option value="8">8 副</option>
+        </select>
+      </div>
+    </section>
+
+    <nav class="tabs" aria-label="game tabs">
+      <button class="tab active" data-tab="ten">十點半</button>
+      <button class="tab" data-tab="dragon">射龍門</button>
+      <button class="tab" data-tab="deck">牌堆紀錄</button>
+    </nav>
+
+    <main>
+      <section class="panel active" id="tenPanel">
+        <div class="panel-title-row">
+          <div>
+            <h2>十點半</h2>
+            <p>A = 1，J / Q / K = 0.5。機率會扣除「我的手牌」與「檯面已出牌」。</p>
+          </div>
+          <button class="outline-btn" id="tenNewRound">新一局</button>
+        </div>
+
+        <div class="mode-title">點牌用途</div>
+        <div class="mode-switch">
+          <button class="mode active" data-ten-mode="hand">加入我的手牌</button>
+          <button class="mode" data-ten-mode="table">記錄檯面已出牌</button>
+        </div>
+
+        <div class="result-grid">
+          <div class="result primary">
+            <span>目前點數</span>
+            <strong id="tenTotal">0.0</strong>
+          </div>
+          <div class="result">
+            <span>安全機率</span>
+            <strong id="safeProb">--</strong>
+          </div>
+          <div class="result">
+            <span>爆牌機率</span>
+            <strong id="bustProb">--</strong>
+          </div>
+          <div class="result">
+            <span>剛好 10.5</span>
+            <strong id="exactProb">--</strong>
+          </div>
+        </div>
+
+        <div class="note-card">
+          <div class="label">我的手牌</div>
+          <div id="tenHand" class="chips">尚未加入手牌</div>
+          <div class="label mt">檯面已出牌</div>
+          <div id="tenTableCards" class="chips">尚未記錄檯面牌</div>
+          <div class="recommendation" id="tenRecommendation">請先輸入手牌。</div>
+        </div>
+
+        <div class="rank-grid" id="tenRanks"></div>
+      </section>
+
+      <section class="panel" id="dragonPanel">
+        <div class="panel-title-row">
+          <div>
+            <h2>射龍門</h2>
+            <p>A 最小；撞上柱贏三倍，撞下柱輸兩倍。</p>
+          </div>
+          <button class="outline-btn" id="dragonNewRound">新一局</button>
+        </div>
+
+        <div class="mode-title">點牌用途</div>
+        <div class="mode-switch">
+          <button class="mode active" data-dragon-mode="round">加入本局牌</button>
+          <button class="mode" data-dragon-mode="table">記錄檯面已出牌</button>
+        </div>
+
+        <div class="note-card">
+          <div class="label">本局牌</div>
+          <div id="dragonCards" class="chips">請輸入第一張、第二張</div>
+          <div class="label mt">旁觀 / 檯面已出牌</div>
+          <div id="dragonTableCards" class="chips">尚未記錄檯面牌</div>
+          <div class="same-controls" id="sameControls">
+            <button class="choice active" data-guess="high">猜大</button>
+            <button class="choice" data-guess="low">猜小</button>
+          </div>
+        </div>
+
+        <div class="result-grid">
+          <div class="result primary">
+            <span id="dragonMainLabel">進門勝率</span>
+            <strong id="dragonWinProb">--</strong>
+          </div>
+          <div class="result">
+            <span id="dragonUpperLabel">撞上柱</span>
+            <strong id="dragonUpperProb">--</strong>
+          </div>
+          <div class="result">
+            <span id="dragonLowerLabel">撞下柱</span>
+            <strong id="dragonLowerProb">--</strong>
+          </div>
+          <div class="result">
+            <span id="dragonLoseLabel">出門輸率</span>
+            <strong id="dragonLoseProb">--</strong>
+          </div>
+        </div>
+
+        <div class="note-card">
+          <div class="label">分類</div>
+          <div id="dragonBreakdown" class="breakdown">輸入兩張牌後開始計算。</div>
+        </div>
+
+        <div class="rank-grid" id="dragonRanks"></div>
+      </section>
+
+      <section class="panel" id="deckPanel">
+        <div class="panel-title-row">
+          <div>
+            <h2>牌堆紀錄</h2>
+            <p>所有看得到的牌都建議記錄，機率會更準。</p>
+          </div>
+        </div>
+
+        <div class="deck-actions">
+          <button class="danger-btn" id="shuffleBtn">重洗牌</button>
+          <button class="outline-btn" id="undoBtn">回上一張</button>
+        </div>
+
+        <div class="remaining-table" id="remainingTable"></div>
+
+        <div class="history">
+          <div class="label">最近紀錄</div>
+          <div id="historyList">尚無紀錄</div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer-actions">
+      <button class="outline-btn" id="globalUndo">回上一張</button>
+      <button class="danger-btn" id="globalShuffle">重洗牌</button>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

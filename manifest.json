@@ -1,0 +1,9 @@
+{
+  "name": "Card Probability Assistant",
+  "short_name": "CardProb",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f6f8fb",
+  "theme_color": "#ffffff",
+  "icons": []
+}
