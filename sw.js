@@ -1,10 +1,10 @@
-const CACHE_NAME = "card-probability-assistant-v6";
+const CACHE_NAME = "card-probability-assistant-v7";
 
 const ASSETS = [
   "./",
   "./index.html",
-  "./style.css?v=6",
-  "./app.js?v=6",
+  "./style.css?v=7",
+  "./app.js?v=7",
   "./manifest.json"
 ];
 
