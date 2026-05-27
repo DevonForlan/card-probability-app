@@ -162,41 +162,46 @@ p{
 }
 
 /* Results */
+/* Extra compact result cards */
 .result-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:8px;
-  margin:10px 0;
+  gap:6px;
+  margin:6px 0 7px;
 }
 
 .result{
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:17px;
-  padding:11px 13px;
-  min-height:74px;
-}
-
-.result.primary{
-  background:linear-gradient(135deg,#edf6ff,#ffffff);
-  border-color:#cfe4ff;
+  padding:7px 9px;
+  min-height:52px;
+  border-radius:14px;
 }
 
 .result span{
-  display:block;
-  color:var(--muted);
-  font-size:13px;
-  font-weight:900;
-  margin-bottom:8px;
+  font-size:11px;
+  margin-bottom:4px;
 }
 
 .result strong{
-  display:block;
-  color:var(--ink);
-  font-size:27px;
+  font-size:20px;
   line-height:1;
-  font-weight:950;
-  letter-spacing:-.04em;
+}
+
+.rank-grid{
+  margin-top:7px;
+}
+
+@media (max-width:390px){
+  .result{
+    min-height:52px;
+    padding:7px 9px;
+  }
+
+  .result strong{
+    font-size:20px;
+  }
+
+  .result span{
+    font-size:11px;
+    margin-bottom:4px;
+  }
 }
 
 /* Card buttons */
