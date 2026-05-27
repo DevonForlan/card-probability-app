@@ -1,4 +1,4 @@
-const CACHE_NAME = "card-probability-assistant-v4";
+const CACHE_NAME = "card-probability-assistant-v5";
 const ASSETS = ["./", "./index.html", "./style.css", "./app.js", "./manifest.json"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
