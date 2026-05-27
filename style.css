@@ -1,207 +1,498 @@
-<!doctype html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#ffffff" />
-  <title>Card Probability Assistant</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="style.css?v=6" />
-</head>
-<body>
-  <div id="app">
+:root{
+  --bg:#f5f7fb;
+  --card:#ffffff;
+  --ink:#10223f;
+  --muted:#6d778c;
+  --line:#e2e8f2;
+  --blue:#1b63d8;
+  --blue-soft:#edf5ff;
+  --red:#d94841;
+  --red-soft:#fff4f4;
+  --shadow:0 10px 26px rgba(18,36,66,.07);
+  --radius:18px;
+}
 
-    <nav class="tabs" aria-label="game tabs">
-      <button class="tab active" data-tab="ten">十點半</button>
-      <button class="tab" data-tab="dragon">射龍門</button>
-      <button class="tab" data-tab="deck">紀錄</button>
-    </nav>
+*{
+  box-sizing:border-box;
+}
 
-    <main>
-      <!-- 十點半 -->
-      <section class="panel active" id="tenPanel">
-        <div class="compact-header">
-          <div>
-            <h2>十點半</h2>
-            <p>A=1，J/Q/K=0.5，已扣除已出牌</p>
-          </div>
-          <button class="outline-btn" id="tenNewRound">新一局</button>
-        </div>
+html,
+body{
+  margin:0;
+  padding:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans TC",Arial,sans-serif;
+}
 
-        <div class="mode-switch">
-          <button class="mode active" data-ten-mode="hand">我的手牌</button>
-          <button class="mode" data-ten-mode="table">檯面已出牌</button>
-        </div>
+button,
+select{
+  font:inherit;
+}
 
-        <div class="result-grid">
-          <div class="result primary">
-            <span>目前點數</span>
-            <strong id="tenTotal">0.0</strong>
-          </div>
-          <div class="result">
-            <span>安全</span>
-            <strong id="safeProb">--</strong>
-          </div>
-          <div class="result">
-            <span>爆牌</span>
-            <strong id="bustProb">--</strong>
-          </div>
-          <div class="result">
-            <span>剛好 10.5</span>
-            <strong id="exactProb">--</strong>
-          </div>
-        </div>
+#app{
+  width:100%;
+  max-width:430px;
+  margin:0 auto;
+  padding:8px 10px 70px;
+}
 
-        <div class="rank-grid" id="tenRanks"></div>
+/* Top tabs */
+.tabs{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:6px;
+  background:#eaf0f8;
+  border-radius:18px;
+  padding:6px;
+  margin:0 0 10px;
+  position:sticky;
+  top:0;
+  z-index:20;
+}
 
-        <div class="mini-status">
-          <div>
-            <span>我的手牌</span>
-            <strong id="tenHandText">尚未加入</strong>
-          </div>
-          <div>
-            <span>檯面已出牌</span>
-            <strong id="tenTableText">尚未記錄</strong>
-          </div>
-        </div>
+.tab{
+  border:0;
+  background:transparent;
+  color:var(--muted);
+  padding:9px 4px;
+  border-radius:14px;
+  font-size:15px;
+  font-weight:900;
+}
 
-        <div class="recommendation compact" id="tenRecommendation">請先輸入手牌。</div>
+.tab.active{
+  background:#fff;
+  color:var(--blue);
+  box-shadow:0 5px 14px rgba(18,36,66,.08);
+}
 
-        <details class="advanced">
-          <summary>牌副與牌堆設定</summary>
-          <div class="advanced-grid">
-            <label>
-              <span>十點半牌副數</span>
-              <select id="tenDeckSelect" class="select">
-                <option value="1">1 副</option>
-                <option value="2">2 副</option>
-                <option value="3">3 副</option>
-                <option value="4">4 副</option>
-                <option value="6">6 副</option>
-                <option value="8">8 副</option>
-              </select>
-            </label>
-            <div class="deck-mini">
-              <span>剩餘</span>
-              <strong id="tenRemainingCards">52</strong>
-            </div>
-            <div class="deck-mini">
-              <span>已出現</span>
-              <strong id="tenSeenCards">0</strong>
-            </div>
-          </div>
-        </details>
-      </section>
+/* Main card */
+.panel{
+  display:none;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:22px;
+  box-shadow:var(--shadow);
+  padding:14px 14px 16px;
+}
 
-      <!-- 射龍門 -->
-      <section class="panel" id="dragonPanel">
-        <div class="compact-header">
-          <div>
-            <h2>射龍門</h2>
-            <p>A 最小，撞上柱贏三倍，撞下柱輸兩倍</p>
-          </div>
-          <button class="outline-btn" id="dragonNewRound">新一局</button>
-        </div>
+.panel.active{
+  display:block;
+}
 
-        <div class="mode-switch">
-          <button class="mode active" data-dragon-mode="round">本局牌</button>
-          <button class="mode" data-dragon-mode="table">檯面已出牌</button>
-        </div>
+.compact-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+  margin-bottom:10px;
+}
 
-        <div class="same-controls" id="sameControls">
-          <button class="choice active" data-guess="high">猜大</button>
-          <button class="choice" data-guess="low">猜小</button>
-        </div>
+h2{
+  margin:0 0 5px;
+  font-size:25px;
+  line-height:1.1;
+  letter-spacing:-.04em;
+  color:var(--ink);
+}
 
-        <div class="result-grid">
-          <div class="result primary">
-            <span id="dragonMainLabel">進門</span>
-            <strong id="dragonWinProb">--</strong>
-          </div>
-          <div class="result">
-            <span id="dragonUpperLabel">撞上柱</span>
-            <strong id="dragonUpperProb">--</strong>
-          </div>
-          <div class="result">
-            <span id="dragonLowerLabel">撞下柱</span>
-            <strong id="dragonLowerProb">--</strong>
-          </div>
-          <div class="result">
-            <span id="dragonLoseLabel">出門</span>
-            <strong id="dragonLoseProb">--</strong>
-          </div>
-        </div>
+p{
+  margin:0;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.45;
+}
 
-        <div class="rank-grid" id="dragonRanks"></div>
+/* Buttons */
+.outline-btn,
+.danger-btn{
+  border-radius:15px;
+  padding:9px 13px;
+  font-size:14px;
+  font-weight:900;
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--ink);
+  white-space:nowrap;
+}
 
-        <div class="mini-status">
-          <div>
-            <span>本局牌</span>
-            <strong id="dragonCardsText">請輸入前兩張</strong>
-          </div>
-          <div>
-            <span>檯面已出牌</span>
-            <strong id="dragonTableText">尚未記錄</strong>
-          </div>
-        </div>
+.danger-btn{
+  background:var(--red-soft);
+  border-color:#ffd5d5;
+  color:var(--red);
+}
 
-        <div class="recommendation compact" id="dragonBreakdown">輸入兩張牌後開始計算。</div>
+/* Mode switch */
+.mode-switch{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin:10px 0;
+}
 
-        <details class="advanced">
-          <summary>牌副與牌堆設定</summary>
-          <div class="advanced-grid">
-            <label>
-              <span>射龍門牌副數</span>
-              <select id="dragonDeckSelect" class="select">
-                <option value="1">1 副</option>
-                <option value="2">2 副</option>
-                <option value="3">3 副</option>
-                <option value="4">4 副</option>
-                <option value="6">6 副</option>
-                <option value="8">8 副</option>
-              </select>
-            </label>
-            <div class="deck-mini">
-              <span>剩餘</span>
-              <strong id="dragonRemainingCards">104</strong>
-            </div>
-            <div class="deck-mini">
-              <span>已出現</span>
-              <strong id="dragonSeenCards">0</strong>
-            </div>
-          </div>
-        </details>
-      </section>
+.mode,
+.choice{
+  border:1px solid var(--line);
+  background:#fff;
+  color:var(--muted);
+  padding:10px 6px;
+  border-radius:15px;
+  font-size:15px;
+  font-weight:900;
+}
 
-      <!-- 紀錄 -->
-      <section class="panel" id="deckPanel">
-        <div class="compact-header">
-          <div>
-            <h2>紀錄</h2>
-            <p>最近點牌與剩餘牌堆摘要</p>
-          </div>
-        </div>
+.mode.active,
+.choice.active{
+  background:var(--blue-soft);
+  color:var(--blue);
+  border-color:#bed8ff;
+}
 
-        <div class="deck-actions">
-          <button class="outline-btn" id="undoBtn">回上一張</button>
-          <button class="danger-btn" id="shuffleBtn">重洗目前遊戲牌堆</button>
-        </div>
+/* Same card controls */
+.same-controls{
+  display:none;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin:8px 0;
+}
 
-        <div class="remaining-table" id="remainingTable"></div>
+.same-controls.show{
+  display:grid;
+}
 
-        <div class="history">
-          <div class="label">最近紀錄</div>
-          <div id="historyList">尚無紀錄</div>
-        </div>
-      </section>
-    </main>
+/* Results */
+.result-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin:10px 0;
+}
 
-    <footer class="footer-actions">
-      <button class="outline-btn" id="globalUndo">回上一張</button>
-      <button class="danger-btn" id="globalShuffle">重洗牌</button>
-    </footer>
-  </div>
+.result{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:17px;
+  padding:11px 13px;
+  min-height:74px;
+}
 
-  <script src="app.js?v=6"></script>
-</body>
-</html>
+.result.primary{
+  background:linear-gradient(135deg,#edf6ff,#ffffff);
+  border-color:#cfe4ff;
+}
+
+.result span{
+  display:block;
+  color:var(--muted);
+  font-size:13px;
+  font-weight:900;
+  margin-bottom:8px;
+}
+
+.result strong{
+  display:block;
+  color:var(--ink);
+  font-size:27px;
+  line-height:1;
+  font-weight:950;
+  letter-spacing:-.04em;
+}
+
+/* Card buttons */
+.rank-grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:8px;
+  margin:12px 0 10px;
+}
+
+.rank-btn{
+  min-height:54px;
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:16px;
+  color:var(--ink);
+  font-size:20px;
+  font-weight:950;
+  box-shadow:0 5px 14px rgba(18,36,66,.055);
+  padding:4px 2px;
+}
+
+.rank-btn small{
+  display:block;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:900;
+  margin-top:2px;
+}
+
+.rank-btn.disabled{
+  opacity:.35;
+}
+
+/* Status summary */
+.mini-status{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin:10px 0;
+}
+
+.mini-status div{
+  background:#f8fafc;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:10px 11px;
+  min-height:58px;
+}
+
+.mini-status span{
+  display:block;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:900;
+  margin-bottom:5px;
+}
+
+.mini-status strong{
+  display:block;
+  color:var(--ink);
+  font-size:15px;
+  font-weight:900;
+  line-height:1.35;
+  word-break:break-word;
+}
+
+/* Recommendation */
+.recommendation{
+  background:#f8fafc;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:10px 12px;
+  color:var(--ink);
+  font-size:14px;
+  font-weight:800;
+  line-height:1.45;
+  margin:10px 0;
+}
+
+.recommendation b{
+  color:var(--blue);
+}
+
+/* Advanced settings */
+.advanced{
+  margin-top:10px;
+  background:#fbfcfe;
+  border:1px solid var(--line);
+  border-radius:16px;
+  overflow:hidden;
+}
+
+.advanced summary{
+  list-style:none;
+  cursor:pointer;
+  padding:11px 12px;
+  color:var(--muted);
+  font-size:14px;
+  font-weight:900;
+}
+
+.advanced summary::-webkit-details-marker{
+  display:none;
+}
+
+.advanced summary::after{
+  content:"展開";
+  float:right;
+  color:var(--blue);
+}
+
+.advanced[open] summary::after{
+  content:"收合";
+}
+
+.advanced-grid{
+  display:grid;
+  grid-template-columns:1.4fr 1fr 1fr;
+  gap:8px;
+  padding:0 10px 10px;
+}
+
+.advanced-grid label span,
+.deck-mini span{
+  display:block;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:900;
+  margin-bottom:5px;
+}
+
+.select{
+  width:100%;
+  padding:8px 9px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+  color:var(--ink);
+  font-size:13px;
+  font-weight:900;
+}
+
+.deck-mini{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:8px 9px;
+}
+
+.deck-mini strong{
+  font-size:18px;
+  color:var(--ink);
+  font-weight:950;
+}
+
+/* Record page */
+.deck-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin:10px 0;
+}
+
+.remaining-table{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:9px;
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:7px;
+  box-shadow:none;
+}
+
+.remaining-cell{
+  background:#f8fafc;
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:8px 5px;
+  text-align:center;
+}
+
+.remaining-cell strong{
+  display:block;
+  font-size:16px;
+  color:var(--ink);
+}
+
+.remaining-cell span{
+  display:block;
+  font-size:11px;
+  color:var(--muted);
+  font-weight:900;
+}
+
+.history{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:11px;
+  margin-top:10px;
+  box-shadow:none;
+}
+
+.label{
+  font-size:11px;
+  color:var(--muted);
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.history-item{
+  padding:7px 0;
+  border-bottom:1px solid var(--line);
+  font-size:13px;
+  color:var(--muted);
+}
+
+.history-item:last-child{
+  border-bottom:0;
+}
+
+/* Bottom actions */
+.footer-actions{
+  position:fixed;
+  left:50%;
+  bottom:0;
+  transform:translateX(-50%);
+  width:min(100%,430px);
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+  background:rgba(246,248,251,.95);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);
+  z-index:50;
+}
+
+/* iPhone small */
+@media (max-width:390px){
+  #app{
+    padding:6px 8px 66px;
+  }
+
+  .panel{
+    padding:12px;
+  }
+
+  h2{
+    font-size:23px;
+  }
+
+  p{
+    font-size:12px;
+  }
+
+  .result{
+    min-height:68px;
+    padding:10px 11px;
+  }
+
+  .result strong{
+    font-size:24px;
+  }
+
+  .rank-grid{
+    grid-template-columns:repeat(5,1fr);
+    gap:7px;
+  }
+
+  .rank-btn{
+    min-height:50px;
+    font-size:18px;
+  }
+
+  .mini-status div{
+    min-height:54px;
+    padding:9px 10px;
+  }
+}
+
+/* Very small */
+@media (max-width:350px){
+  .result-grid{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .rank-grid{
+    grid-template-columns:repeat(4,1fr);
+  }
+
+  .rank-btn{
+    min-height:48px;
+  }
+}
