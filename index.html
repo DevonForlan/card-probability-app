@@ -6,11 +6,10 @@
   <meta name="theme-color" content="#ffffff" />
   <title>Card Probability Assistant</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="style.css?v=8" />
+  <link rel="stylesheet" href="style.css?v=10" />
 </head>
 <body>
   <div id="app">
-
     <nav class="tabs" aria-label="game tabs">
       <button class="tab active" data-tab="ten">十點半</button>
       <button class="tab" data-tab="dragon">射龍門</button>
@@ -18,9 +17,8 @@
     </nav>
 
     <main>
-      <!-- 十點半 -->
       <section class="panel active" id="tenPanel">
-        <div class="compact-header">
+        <div class="top-row">
           <div>
             <h2>十點半</h2>
             <p>A=1，J/Q/K=0.5，已扣除已出牌</p>
@@ -65,13 +63,13 @@
           </div>
         </div>
 
-        <div class="recommendation compact" id="tenRecommendation">請先輸入手牌。</div>
+        <div class="recommendation" id="tenRecommendation">請先輸入手牌。</div>
 
         <details class="advanced">
           <summary>牌副與牌堆設定</summary>
           <div class="advanced-grid">
             <label>
-              <span>十點半牌副數</span>
+              <span>牌副數</span>
               <select id="tenDeckSelect" class="select">
                 <option value="1">1 副</option>
                 <option value="2">2 副</option>
@@ -86,16 +84,15 @@
               <strong id="tenRemainingCards">52</strong>
             </div>
             <div class="deck-mini">
-              <span>已出現</span>
+              <span>已出</span>
               <strong id="tenSeenCards">0</strong>
             </div>
           </div>
         </details>
       </section>
 
-      <!-- 射龍門 -->
       <section class="panel" id="dragonPanel">
-        <div class="compact-header">
+        <div class="top-row">
           <div>
             <h2>射龍門</h2>
             <p>A 最小，撞上柱贏三倍，撞下柱輸兩倍</p>
@@ -145,13 +142,13 @@
           </div>
         </div>
 
-        <div class="recommendation compact" id="dragonBreakdown">輸入兩張牌後開始計算。</div>
+        <div class="recommendation" id="dragonBreakdown">輸入兩張牌後開始計算。</div>
 
         <details class="advanced">
           <summary>牌副與牌堆設定</summary>
           <div class="advanced-grid">
             <label>
-              <span>射龍門牌副數</span>
+              <span>牌副數</span>
               <select id="dragonDeckSelect" class="select">
                 <option value="1">1 副</option>
                 <option value="2">2 副</option>
@@ -166,25 +163,24 @@
               <strong id="dragonRemainingCards">104</strong>
             </div>
             <div class="deck-mini">
-              <span>已出現</span>
+              <span>已出</span>
               <strong id="dragonSeenCards">0</strong>
             </div>
           </div>
         </details>
       </section>
 
-      <!-- 紀錄 -->
       <section class="panel" id="deckPanel">
-        <div class="compact-header">
+        <div class="top-row">
           <div>
             <h2>紀錄</h2>
-            <p>最近點牌與剩餘牌堆摘要</p>
+            <p>目前遊戲的最近點牌與剩餘牌堆</p>
           </div>
         </div>
 
         <div class="deck-actions">
           <button class="outline-btn" id="undoBtn">回上一張</button>
-          <button class="danger-btn" id="shuffleBtn">重洗目前遊戲牌堆</button>
+          <button class="danger-btn" id="shuffleBtn">重洗目前牌堆</button>
         </div>
 
         <div class="remaining-table" id="remainingTable"></div>
@@ -202,6 +198,6 @@
     </footer>
   </div>
 
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
