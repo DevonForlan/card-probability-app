@@ -34,14 +34,12 @@ const RANK_ORDER = {
 
 let state = {
   currentGame: "ten",
-
   ten: {
     decks: 1,
     history: [],
     hand: [],
     mode: "hand"
   },
-
   dragon: {
     decks: 2,
     history: [],
@@ -53,9 +51,21 @@ let state = {
 
 const $ = (id) => document.getElementById(id);
 
-function gameState(){
-  return state[state.currentGame];
+function cleanupOldServiceWorker(){
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      registrations.forEach(reg => reg.unregister());
+    });
+  }
+
+  if ("caches" in window) {
+    caches.keys().then(keys => {
+      keys.forEach(key => caches.delete(key));
+    });
+  }
 }
+
+cleanupOldServiceWorker();
 
 function baseCountPerRank(game = state.currentGame){
   return state[game].decks * 4;
@@ -63,14 +73,17 @@ function baseCountPerRank(game = state.currentGame){
 
 function usedCounts(game = state.currentGame){
   const counts = Object.fromEntries(RANKS.map(r => [r, 0]));
+
   for (const item of state[game].history) {
     counts[item.rank]++;
   }
+
   return counts;
 }
 
 function remainingCounts(game = state.currentGame){
   const used = usedCounts(game);
+
   return Object.fromEntries(
     RANKS.map(r => [r, Math.max(0, baseCountPerRank(game) - used[r])])
   );
@@ -95,10 +108,16 @@ function rankListToText(ranks){
   return ranks.length ? ranks.join(", ") : "無";
 }
 
+function cardsByKind(game, kind){
+  return state[game].history
+    .filter(x => x.kind === kind)
+    .map(x => x.rank);
+}
+
 function addCard(rank){
-  const g = state.currentGame;
-  const s = state[g];
-  const rem = remainingCounts(g);
+  const game = state.currentGame;
+  const s = state[game];
+  const rem = remainingCounts(game);
 
   if (rem[rank] <= 0) {
     alert(`${rank} 已經沒有剩餘牌。`);
@@ -107,14 +126,23 @@ function addCard(rank){
 
   let kind = "";
 
-  if (g === "ten") {
+  if (game === "ten") {
     kind = s.mode === "hand" ? "ten-hand" : "ten-table";
-    if (kind === "ten-hand") s.hand.push(rank);
+
+    if (kind === "ten-hand") {
+      s.hand.push(rank);
+    }
   }
 
-  if (g === "dragon") {
+  if (game === "dragon") {
     kind = s.mode === "round" ? "dragon-round" : "dragon-table";
-    if (kind === "dragon-round" && s.roundCards.length < 3) {
+
+    if (kind === "dragon-round") {
+      if (s.roundCards.length >= 3) {
+        alert("本局已經有三張牌，請按新一局或切換為檯面已出牌。");
+        return;
+      }
+
       s.roundCards.push(rank);
     }
   }
@@ -130,8 +158,8 @@ function addCard(rank){
 }
 
 function undo(){
-  const g = state.currentGame;
-  const s = state[g];
+  const game = state.currentGame;
+  const s = state[game];
   const item = s.history.pop();
 
   if (!item) return;
@@ -162,29 +190,23 @@ function newRound(){
 }
 
 function shuffleDeck(){
-  const g = state.currentGame;
-  const label = g === "ten" ? "十點半" : "射龍門";
+  const game = state.currentGame;
+  const label = game === "ten" ? "十點半" : "射龍門";
 
   if (!confirm(`確認重洗 ${label} 牌堆？這會清空此遊戲的所有已出現牌紀錄。`)) return;
 
-  state[g].history = [];
+  state[game].history = [];
 
-  if (g === "ten") {
+  if (game === "ten") {
     state.ten.hand = [];
   }
 
-  if (g === "dragon") {
+  if (game === "dragon") {
     state.dragon.roundCards = [];
   }
 
   save();
   render();
-}
-
-function cardsByKind(game, kind){
-  return state[game].history
-    .filter(x => x.kind === kind)
-    .map(x => x.rank);
 }
 
 /* 十點半 */
@@ -202,7 +224,6 @@ function tenStats(){
   let exact = 0;
 
   const safeRanks = [];
-  const bustRanks = [];
   const exactRanks = [];
 
   for (const r of RANKS) {
@@ -216,7 +237,6 @@ function tenStats(){
       safeRanks.push(r);
     } else {
       bust += c;
-      bustRanks.push(r);
     }
 
     if (next === 10.5) {
@@ -225,16 +245,7 @@ function tenStats(){
     }
   }
 
-  return {
-    total,
-    safe,
-    bust,
-    exact,
-    d,
-    safeRanks,
-    bustRanks,
-    exactRanks
-  };
+  return { total, safe, bust, exact, d, safeRanks, exactRanks };
 }
 
 function renderTen(){
@@ -281,7 +292,6 @@ function dragonStats(){
 
   const a = cards[0];
   const b = cards[1];
-
   const oa = RANK_ORDER[a];
   const ob = RANK_ORDER[b];
 
@@ -443,7 +453,7 @@ function renderDragon(){
   renderRanks("dragonRanks", "dragon");
 }
 
-/* 共用渲染 */
+/* common */
 function renderRanks(containerId, game){
   const rem = remainingCounts(game);
   const el = $(containerId);
@@ -466,14 +476,14 @@ function renderRanks(containerId, game){
 }
 
 function renderDeck(){
-  const g = state.currentGame;
-  const rem = remainingCounts(g);
+  const game = state.currentGame;
+  const rem = remainingCounts(game);
 
   $("remainingTable").innerHTML = RANKS.map(r =>
     `<div class="remaining-cell"><strong>${r}</strong><span>${rem[r]}</span></div>`
   ).join("");
 
-  const recent = [...state[g].history].slice(-16).reverse();
+  const recent = [...state[game].history].slice(-16).reverse();
 
   $("historyList").innerHTML = recent.length
     ? recent.map(item => `<div class="history-item">${item.rank} · ${labelKind(item.kind)}</div>`).join("")
@@ -489,30 +499,46 @@ function labelKind(kind){
   }[kind] || kind;
 }
 
+function syncActiveButtons(){
+  document.querySelectorAll("[data-ten-mode]").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.tenMode === state.ten.mode);
+  });
+
+  document.querySelectorAll("[data-dragon-mode]").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.dragonMode === state.dragon.mode);
+  });
+
+  document.querySelectorAll("[data-guess]").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.guess === state.dragon.guess);
+  });
+}
+
 function render(){
+  syncActiveButtons();
   renderTen();
   renderDragon();
   renderDeck();
 }
 
-/* 儲存 */
+/* storage */
 function save(){
-  localStorage.setItem("card-prob-state-v6", JSON.stringify(state));
+  localStorage.setItem("card-prob-state-v10", JSON.stringify(state));
 }
 
 function load(){
   try {
-    const raw = localStorage.getItem("card-prob-state-v6");
+    const raw = localStorage.getItem("card-prob-state-v10");
     if (raw) {
+      const saved = JSON.parse(raw);
       state = {
         ...state,
-        ...JSON.parse(raw)
+        ...saved
       };
     }
   } catch(e) {}
 }
 
-/* 事件綁定 */
+/* events */
 function bind(){
   document.querySelectorAll(".tab").forEach(btn => {
     btn.onclick = () => {
@@ -533,10 +559,6 @@ function bind(){
   document.querySelectorAll("[data-ten-mode]").forEach(btn => {
     btn.onclick = () => {
       state.ten.mode = btn.dataset.tenMode;
-
-      document.querySelectorAll("[data-ten-mode]").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-
       save();
       render();
     };
@@ -545,10 +567,6 @@ function bind(){
   document.querySelectorAll("[data-dragon-mode]").forEach(btn => {
     btn.onclick = () => {
       state.dragon.mode = btn.dataset.dragonMode;
-
-      document.querySelectorAll("[data-dragon-mode]").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-
       save();
       render();
     };
@@ -557,10 +575,6 @@ function bind(){
   document.querySelectorAll("[data-guess]").forEach(btn => {
     btn.onclick = () => {
       state.dragon.guess = btn.dataset.guess;
-
-      document.querySelectorAll("[data-guess]").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-
       save();
       render();
     };
